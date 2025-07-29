@@ -39,6 +39,9 @@ class UserServiceTest {
         IPage<User>pagfe1=userService.page(new Page<User>(2, 1), null);
         log.info(pagfe1.toString());
     }
-
+    @Test
+    void getPermRoleList() {
+        log.info(userService.getPermRoleList("1234").toString());
+    }
 
 }

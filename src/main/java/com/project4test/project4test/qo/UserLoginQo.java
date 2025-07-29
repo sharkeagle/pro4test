@@ -1,4 +1,4 @@
-package com.project4test.project4test.Qo;
+package com.project4test.project4test.qo;
 
 import lombok.Data;
 

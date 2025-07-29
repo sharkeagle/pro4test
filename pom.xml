@@ -15,6 +15,13 @@
     </properties>
 
     <dependencies>
+<!--        hutool-->
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+            <version>5.8.38</version>
+        </dependency>
+
 <!--        MP以及插件-->
         <dependency>
             <groupId>com.baomidou</groupId>
