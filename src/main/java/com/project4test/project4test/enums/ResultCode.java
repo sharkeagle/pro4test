@@ -14,8 +14,8 @@ public enum ResultCode {
     UNAUTHORIZED(401, "未授权"),
     FORBIDDEN(403, "禁止访问"),
     NOT_FOUND(404, "资源不存在"),
-    PARAM_VALID_ERROR(400, "参数校验失败");
-
+    PARAM_VALID_ERROR(400, "参数校验失败"),
+    NOT_LOGIN(405, "未登录");
     private final int code;
     private final String msg;
 }

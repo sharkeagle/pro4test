@@ -13,6 +13,7 @@ import com.project4test.project4test.dao.UserDao;
 import com.project4test.project4test.dto.Result;
 import com.project4test.project4test.entity.User;
 import com.project4test.project4test.enums.ResultCode;
+import com.project4test.project4test.qo.UserRegisterQo;
 import com.project4test.project4test.service.UserService;
 import com.project4test.project4test.vo.UserVo;
 import lombok.RequiredArgsConstructor;
@@ -29,14 +30,24 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserService {
+
     private final SysRoleDao sysRoleDao;
     private final SysUserRoleDao sysUserRoleDao;
+
+    @Override
+    public Result<String> register(UserRegisterQo userRegisterQo) {
+        User user = new User();
+        BeanUtils.copyProperties(userRegisterQo, user);
+        boolean isSave=this.save(user);
+        return isSave?Result.success("注册成功"):Result.fail(ResultCode.FAILED);
+    }
+
     @Override
     public Result<UserVo> login(UserLoginQo loginQo) {
         log.info("loginQo:id{},pwd:{}", loginQo.getLoginId(),loginQo.getPwd());
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("login_id", loginQo.getLoginId());
-        User user= getOne(queryWrapper);
+        User user= this.getOne(queryWrapper);
         if(user==null){
             return Result.fail(ResultCode.NOT_FOUND);
         }
@@ -51,6 +62,15 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
     }
 
     @Override
+    public Result<String> logout(String loginId) {
+        if(!StpUtil.isLogin(loginId)){
+            return Result.fail(ResultCode.NOT_LOGIN);
+        }
+        StpUtil.logout(loginId);
+        return Result.success("登出成功");
+    }
+
+    @Override
     public List<String> getPermRoleList(String loginId) {
         // 检查登录ID是否为空，如果为空则直接返回空列表
         if(StrUtil.isEmpty(loginId)){
@@ -60,7 +80,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("login_id", loginId);
         // 根据查询条件获取用户信息
-        User user = getOne(queryWrapper);
+        User user = this.getOne(queryWrapper);
         // 如果用户信息为空，则直接返回空列表
         if(user==null){
             return Collections.emptyList();

@@ -41,7 +41,7 @@ class UserServiceTest {
     }
     @Test
     void getPermRoleList() {
-        log.info(userService.getPermRoleList("1234").toString());
+        log.info(userService.getPermRoleList("").toString());
     }
 
 }
