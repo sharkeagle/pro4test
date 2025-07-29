@@ -82,13 +82,13 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
             QueryWrapper<SysRole> sysRoleQueryWrapper = new QueryWrapper<>();
             sysRoleQueryWrapper.eq("id", sysUserRole.getRoleId());
             // 根据查询条件获取角色信息
-            SysRole sysRoles = sysRoleDao.selectOne(sysRoleQueryWrapper);
+            SysRole sysRole = sysRoleDao.selectOne(sysRoleQueryWrapper);
             // 如果角色信息为空，则跳过本次循环
-            if(sysRoles==null){
+            if(sysRole==null){
                 continue;
             }
             // 将角色名称添加到角色列表中
-            roles.add(sysRoles.getRoleName());
+            roles.add(sysRole.getRoleName());
         }
 
         return roles;
