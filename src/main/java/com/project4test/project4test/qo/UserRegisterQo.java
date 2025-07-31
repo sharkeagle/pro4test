@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class UserRegisterQo {
-    private String loginId;
     private String pwd;
     private String name;
+    private String loginPhone;
 }

@@ -1,6 +1,7 @@
 package com.project4test.project4test.dto;
 
 import com.project4test.project4test.enums.ResultCode;
+import com.project4test.project4test.enums.SaTokenExceptionEnum;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import java.io.Serializable;
@@ -32,6 +33,14 @@ public class Result<T> implements Serializable {
                 .setCode(ResultCode.SUCCESS.getCode())
                 .setMsg(ResultCode.SUCCESS.getMsg())
                 .setData(data);
+    }
+
+    //saToken异常静态工厂方法
+    public static <T> Result<T> SaResult(SaTokenExceptionEnum saTokenExceptionEnum) {
+        return new Result<T>()
+                .setCode(saTokenExceptionEnum.getCode())
+                .setMsg(saTokenExceptionEnum.getMsg())
+                .setData(null);
     }
 
     // 失败静态方法

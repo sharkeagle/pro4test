@@ -8,6 +8,7 @@ import com.project4test.project4test.dao.SysRoleDao;
 import com.project4test.project4test.dao.SysUserRoleDao;
 import com.project4test.project4test.entity.SysRole;
 import com.project4test.project4test.entity.SysUserRole;
+import com.project4test.project4test.enums.UserCode;
 import com.project4test.project4test.qo.UserLoginQo;
 import com.project4test.project4test.dao.UserDao;
 import com.project4test.project4test.dto.Result;
@@ -15,6 +16,7 @@ import com.project4test.project4test.entity.User;
 import com.project4test.project4test.enums.ResultCode;
 import com.project4test.project4test.qo.UserRegisterQo;
 import com.project4test.project4test.service.UserService;
+import com.project4test.project4test.util.BcryptUtil;
 import com.project4test.project4test.vo.UserVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +27,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -38,6 +41,9 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
     public Result<String> register(UserRegisterQo userRegisterQo) {
         User user = new User();
         BeanUtils.copyProperties(userRegisterQo, user);
+        user.setPwd(BcryptUtil.hash(user.getPwd()));
+        String uuid = UUID.randomUUID().toString();
+        user.setLoginId(uuid);
         boolean isSave=this.save(user);
         return isSave?Result.success("注册成功"):Result.fail(ResultCode.FAILED);
     }
@@ -45,28 +51,43 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
     @Override
     public Result<UserVo> login(UserLoginQo loginQo) {
         log.info("loginQo:id{},pwd:{}", loginQo.getLoginId(),loginQo.getPwd());
+        if(StrUtil.isEmpty(loginQo.getLoginId())||StrUtil.isEmpty(loginQo.getPwd())){
+            return Result.fail(ResultCode.PARAM_VALID_ERROR);
+        }
+
+        if(UserCode.LOGIN_BY_LOGIN_PHONE.getCode()==loginQo.getLoginWay()){
+            return loginReal(UserCode.LOGIN_BY_LOGIN_PHONE.getDatabaseField(),loginQo);
+        }
+
+        if(UserCode.LOGIN_BY_LOGIN_ID.getCode()==loginQo.getLoginWay()){
+            return loginReal(UserCode.LOGIN_BY_LOGIN_ID.getDatabaseField(),loginQo);
+        }
+
+        return Result.fail(ResultCode.PARAM_VALID_ERROR);
+    }
+    private Result<UserVo> loginReal(String databaseFiled,UserLoginQo loginQo) {
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("login_id", loginQo.getLoginId());
+        queryWrapper.eq(databaseFiled, loginQo.getLoginId());
         User user= this.getOne(queryWrapper);
         if(user==null){
             return Result.fail(ResultCode.NOT_FOUND);
         }
-        if(user.getPwd().equals(loginQo.getPwd())){
-            StpUtil.login(user.getLoginId());
-            UserVo userVo = new UserVo();
-            BeanUtils.copyProperties(user,userVo);
-            userVo.setToken(StpUtil.getTokenValue());
-            return Result.success(userVo);
+
+        boolean pwdCheck = BcryptUtil.check(loginQo.getPwd(), user.getPwd());
+        if(!pwdCheck){
+            return Result.fail(ResultCode.PARAM_VALID_ERROR);
         }
-        return Result.fail(ResultCode.PARAM_VALID_ERROR);
+
+        StpUtil.login(user.getLoginId());
+        UserVo userVo = new UserVo();
+        BeanUtils.copyProperties(user,userVo);
+        userVo.setToken(StpUtil.getTokenValue());
+        return Result.success(userVo);
     }
 
     @Override
-    public Result<String> logout(String loginId) {
-        if(!StpUtil.isLogin(loginId)){
-            return Result.fail(ResultCode.NOT_LOGIN);
-        }
-        StpUtil.logout(loginId);
+    public Result<String> logout() {
+        StpUtil.logout();
         return Result.success("登出成功");
     }
 
@@ -76,15 +97,17 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
         if(StrUtil.isEmpty(loginId)){
             return Collections.emptyList();
         }
+
+
         // 创建用户查询条件包装器，根据登录ID查询用户信息
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("login_id", loginId);
-        // 根据查询条件获取用户信息
         User user = this.getOne(queryWrapper);
-        // 如果用户信息为空，则直接返回空列表
         if(user==null){
             return Collections.emptyList();
         }
+
+
         // 创建用户角色关联查询条件包装器，根据用户ID查询用户角色关联信息
         QueryWrapper<SysUserRole> sysUserRoleQueryWrapper = new QueryWrapper<>();
         sysUserRoleQueryWrapper.eq("user_id", user.getId());
@@ -94,6 +117,8 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
         if(sysUserRoles.isEmpty()){
             return Collections.emptyList();
         }
+
+
         // 用于存储用户角色名称的列表
         List<String> roles = new ArrayList<>();
         // 遍历用户角色关联信息列表
@@ -110,7 +135,6 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
             // 将角色名称添加到角色列表中
             roles.add(sysRole.getRoleName());
         }
-
         return roles;
     }
 

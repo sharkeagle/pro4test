@@ -1,5 +1,6 @@
 package com.project4test.project4test.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.annotation.SaMode;
 import com.alibaba.csp.sentinel.annotation.SentinelResource;
@@ -25,10 +26,10 @@ public class UserController {
         return userService.login(loginQo);
     }
 
-    @SaCheckRole(value = {"admin", "superadmin"},mode = SaMode.OR)
+    @SaCheckLogin
     @RequestMapping("/logout")
-    public Result<String> logout(String loginId) {
-        return userService.logout(loginId);
+    public Result<String> logout() {
+        return userService.logout();
     }
 
     @RequestMapping("/register")

@@ -28,10 +28,9 @@ public interface UserService extends IService<User> {
     /**
      * 登出
      *
-     * @param loginId 用户的登录id
      * @return 登出成功返回成功信息，登出失败返回失败信息
      */
-    Result<String> logout(String loginId);
+    Result<String> logout();
     /**
      * 根据用户登录ID获取用户的角色权限列表
      *
