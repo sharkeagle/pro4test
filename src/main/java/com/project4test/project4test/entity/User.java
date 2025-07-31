@@ -3,6 +3,7 @@ package com.project4test.project4test.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.project4test.project4test.enums.UserCommonEnum;
 import lombok.Data;
 
 @Data
@@ -14,4 +15,7 @@ public class User {
     private String pwd;
     private String loginId;
     private String loginPhone;
+    private String email;
+    private String usedPhone;
+    private int status = UserCommonEnum.STATUS_NORMAL.getCode();
 }

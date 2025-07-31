@@ -16,7 +16,7 @@ public class GlobalExceptionHandler {
         log.info("SaTokenCode: {}", e.getCode());
         // 根据不同异常细分状态码返回不同的提示
         if(e.getCode() == SaTokenExceptionEnum.TOKEN_NOT_FOUND.getCode()) {
-            return Result.SaResult(SaTokenExceptionEnum.TOKEN_NOT_FOUND);
+            return Result.ObjectResult(SaTokenExceptionEnum.TOKEN_NOT_FOUND);
         }
 
         // 默认的提示

@@ -8,7 +8,8 @@ import com.project4test.project4test.dao.SysRoleDao;
 import com.project4test.project4test.dao.SysUserRoleDao;
 import com.project4test.project4test.entity.SysRole;
 import com.project4test.project4test.entity.SysUserRole;
-import com.project4test.project4test.enums.UserCode;
+import com.project4test.project4test.enums.UserCommonEnum;
+import com.project4test.project4test.enums.UserLoginCode;
 import com.project4test.project4test.qo.UserLoginQo;
 import com.project4test.project4test.dao.UserDao;
 import com.project4test.project4test.dto.Result;
@@ -51,26 +52,36 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
     @Override
     public Result<UserVo> login(UserLoginQo loginQo) {
         log.info("loginQo:id{},pwd:{}", loginQo.getLoginId(),loginQo.getPwd());
+        
         if(StrUtil.isEmpty(loginQo.getLoginId())||StrUtil.isEmpty(loginQo.getPwd())){
             return Result.fail(ResultCode.PARAM_VALID_ERROR);
         }
 
-        if(UserCode.LOGIN_BY_LOGIN_PHONE.getCode()==loginQo.getLoginWay()){
-            return loginReal(UserCode.LOGIN_BY_LOGIN_PHONE.getDatabaseField(),loginQo);
+        if(UserLoginCode.LOGIN_BY_LOGIN_PHONE.getCode()==loginQo.getLoginWay()){
+            return loginReal(UserLoginCode.LOGIN_BY_LOGIN_PHONE.getDatabaseField(),loginQo);
         }
 
-        if(UserCode.LOGIN_BY_LOGIN_ID.getCode()==loginQo.getLoginWay()){
-            return loginReal(UserCode.LOGIN_BY_LOGIN_ID.getDatabaseField(),loginQo);
+        if(UserLoginCode.LOGIN_BY_LOGIN_ID.getCode()==loginQo.getLoginWay()){
+            return loginReal(UserLoginCode.LOGIN_BY_LOGIN_ID.getDatabaseField(),loginQo);
         }
 
         return Result.fail(ResultCode.PARAM_VALID_ERROR);
     }
+
     private Result<UserVo> loginReal(String databaseFiled,UserLoginQo loginQo) {
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq(databaseFiled, loginQo.getLoginId());
         User user= this.getOne(queryWrapper);
         if(user==null){
             return Result.fail(ResultCode.NOT_FOUND);
+        }
+
+        if(user.getStatus()== UserCommonEnum.STATUS_UNREGISTER.getCode()){
+            return Result.ObjectResult(UserCommonEnum.STATUS_UNREGISTER);
+        }
+
+        if(user.getStatus()== UserCommonEnum.STATUS_FROZEN.getCode()){
+            return Result.ObjectResult(UserCommonEnum.STATUS_FROZEN);
         }
 
         boolean pwdCheck = BcryptUtil.check(loginQo.getPwd(), user.getPwd());

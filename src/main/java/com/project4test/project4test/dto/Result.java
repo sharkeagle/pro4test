@@ -5,6 +5,7 @@ import com.project4test.project4test.enums.SaTokenExceptionEnum;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import java.io.Serializable;
+import java.lang.reflect.Method;
 
 /**
  * 统一API响应结果封装类（Lombok版）
@@ -35,18 +36,42 @@ public class Result<T> implements Serializable {
                 .setData(data);
     }
 
-    //saToken异常静态工厂方法
-    public static <T> Result<T> SaResult(SaTokenExceptionEnum saTokenExceptionEnum) {
-        return new Result<T>()
-                .setCode(saTokenExceptionEnum.getCode())
-                .setMsg(saTokenExceptionEnum.getMsg())
-                .setData(null);
+    // 使用反射实现 ObjectResult 方法
+    public static <T> Result<T> ObjectResult(Object data) {
+        Result<T> result = new Result<>();
+        if (data != null) {
+            try {
+                // 反射调用 getCode 方法
+                Method getCodeMethod = data.getClass().getMethod("getCode");
+                int code = (int) getCodeMethod.invoke(data);
+                result.setCode(code);
+
+                // 反射调用 getMsg 方法
+                Method getMsgMethod = data.getClass().getMethod("getMsg");
+                String msg = (String) getMsgMethod.invoke(data);
+                result.setMsg(msg);
+            } catch (Exception e) {
+                // 处理反射调用异常，设置默认失败状态
+                result.setCode(ResultCode.FAILED.getCode());
+                result.setMsg("获取 code 和 msg 失败: " + e.getMessage());
+            }
+        } else {
+            // 若 data 为 null，设置默认失败状态
+            result.setCode(ResultCode.FAILED.getCode());
+            result.setMsg("传入数据为 null");
+        }
+        result.setData(null);
+        return result;
     }
+
+
 
     // 失败静态方法
     public static <T> Result<T> fail() {
         return fail(ResultCode.FAILED);
     }
+
+
 
     public static <T> Result<T> fail(ResultCode resultCode) {
         return fail(resultCode.getCode(), resultCode.getMsg());
