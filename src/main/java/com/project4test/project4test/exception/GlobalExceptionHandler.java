@@ -19,7 +19,6 @@ public class GlobalExceptionHandler {
             return Result.SaResult(SaTokenExceptionEnum.TOKEN_NOT_FOUND);
         }
 
-
         // 默认的提示
         return Result.fail(e.getCode(),"服务器繁忙，请稍后重试...");
     }
