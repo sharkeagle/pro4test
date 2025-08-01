@@ -17,7 +17,8 @@ public enum ResultCode {
     PARAM_VALID_ERROR(400, "参数校验失败"),
     NOT_LOGIN(405, "未登录"),
     USER_EXIST(406, "用户已存在"),
-    PHONE_BOUND(407, "手机号已绑定");
+    PHONE_BOUND(407, "手机号已绑定"),
+    CHECK_CODE_ERROR(408, "验证码错误");
     private final int code;
     private final String msg;
 }

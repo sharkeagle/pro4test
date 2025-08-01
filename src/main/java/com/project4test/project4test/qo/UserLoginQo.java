@@ -20,4 +20,12 @@ public class UserLoginQo {
      * 登录方式
      */
     private int loginWay;
+    /**
+     * 验证码
+     */
+    private String checkCode;
+    /**
+     * 验证码key
+     */
+    private String checkCodeKey;
 }

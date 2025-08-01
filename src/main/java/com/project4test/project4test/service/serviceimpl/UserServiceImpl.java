@@ -20,6 +20,7 @@ import com.project4test.project4test.enums.ResultCode;
 import com.project4test.project4test.qo.UserRegisterQo;
 import com.project4test.project4test.service.UserService;
 import com.project4test.project4test.util.BcryptUtil;
+import com.project4test.project4test.util.KacptchaUtil;
 import com.project4test.project4test.vo.UserVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +40,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
 
     private final SysRoleDao sysRoleDao;
     private final SysUserRoleDao sysUserRoleDao;
+    private final KacptchaUtil kacptchaUtil;
 
     @Override
     public Result<String> register(UserRegisterQo userRegisterQo) {
@@ -88,7 +90,9 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
     @Override
     public Result<UserVo> login(UserLoginQo loginQo) {
         log.info("loginQo:id{},pwd:{}", loginQo.getLoginId(),loginQo.getPwd());
-        
+        if(!kacptchaUtil.checkKacptcha(loginQo.getCheckCodeKey(),loginQo.getCheckCode())){
+            return Result.fail(ResultCode.CHECK_CODE_ERROR);
+        }
         if(StrUtil.isEmpty(loginQo.getLoginId())||StrUtil.isEmpty(loginQo.getPwd())){
             return Result.fail(ResultCode.PARAM_VALID_ERROR);
         }
