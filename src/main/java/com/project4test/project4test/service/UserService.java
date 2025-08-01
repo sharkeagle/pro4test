@@ -19,6 +19,13 @@ public interface UserService extends IService<User> {
     Result<String> register(UserRegisterQo userRegisterQoQo);
 
     /**
+     * 注销
+     *
+     * @return 注销成功返回成功信息，注销失败返回失败信息
+     */
+    Result<String> unregister();
+
+    /**
      * 登录
      *
      * @param userLoginQo 用户的登录信息

@@ -38,5 +38,11 @@ public class UserController {
         return userService.register(userRegisterQo);
     }
 
+    @SaCheckLogin
+    @RequestMapping("/unregister")
+    public Result<String> unregister() {
+        return userService.unregister();
+    }
+
 
 }

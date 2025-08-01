@@ -2,7 +2,9 @@ package com.project4test.project4test.service.serviceimpl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.extra.pinyin.PinyinUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.project4test.project4test.dao.SysRoleDao;
 import com.project4test.project4test.dao.SysUserRoleDao;
@@ -40,13 +42,47 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
 
     @Override
     public Result<String> register(UserRegisterQo userRegisterQo) {
+
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("login_phone",userRegisterQo.getLoginPhone());
+        boolean userExist = this.exists(queryWrapper);
+        if(userExist){
+            return Result.fail(ResultCode.PHONE_BOUND);
+        }
+
         User user = new User();
         BeanUtils.copyProperties(userRegisterQo, user);
+
         user.setPwd(BcryptUtil.hash(user.getPwd()));
+
         String uuid = UUID.randomUUID().toString();
-        user.setLoginId(uuid);
-        boolean isSave=this.save(user);
-        return isSave?Result.success("注册成功"):Result.fail(ResultCode.FAILED);
+        String headName = PinyinUtil.getPinyin(userRegisterQo.getName(),"");
+        user.setLoginId(headName + "-" + uuid);
+        boolean isSave = this.save(user);
+        return isSave ? Result.success("注册成功") : Result.fail(ResultCode.FAILED);
+    }
+
+    @Override
+    public Result<String> unregister() {
+        String loginId = (String) StpUtil.getLoginId();
+        log.info("loginId:{}",loginId);
+        if(StrUtil.isEmpty(loginId)){
+            return Result.fail(ResultCode.PARAM_VALID_ERROR);
+        }
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("login_id", loginId);
+        User user = this.getOne(queryWrapper);
+        if(user==null){
+            return Result.fail(ResultCode.NOT_FOUND);
+        }
+        UpdateWrapper<User> updateWrapper=new UpdateWrapper<>();
+        updateWrapper.eq("login_id",loginId);
+        updateWrapper.set("status",UserCommonEnum.STATUS_UNREGISTER.getCode());
+        updateWrapper.set("used_phone",user.getLoginPhone());
+        updateWrapper.set("login_phone",null);
+        boolean isRemove= this.update(updateWrapper);
+        this.logout();
+        return isRemove?Result.success("注销成功"):Result.fail(ResultCode.FAILED);
     }
 
     @Override
@@ -67,6 +103,8 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
 
         return Result.fail(ResultCode.PARAM_VALID_ERROR);
     }
+
+
 
     private Result<UserVo> loginReal(String databaseFiled,UserLoginQo loginQo) {
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();

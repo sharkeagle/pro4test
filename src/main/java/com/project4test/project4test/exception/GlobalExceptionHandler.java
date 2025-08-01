@@ -20,6 +20,6 @@ public class GlobalExceptionHandler {
         }
 
         // 默认的提示
-        return Result.fail(e.getCode(),"服务器繁忙，请稍后重试...");
+        return Result.fail(e.getCode(),e.getMessage());
     }
 }
