@@ -22,7 +22,7 @@ import java.util.List;
 public class ProductServiceImpl extends ServiceImpl<ProductDao, Product> implements ProductService {
     @Override
     public Result<IPage<ProductVo>> PageList(ProductPageQo productPageQo) {
-        log.info("names{}", productPageQo.getNames());
+        log.info("查询条件: {}", productPageQo);
         QueryWrapper<Product> queryWrapper = new QueryWrapper<>();
 
         // contion字段作用,当参数为空时忽略
@@ -36,11 +36,13 @@ public class ProductServiceImpl extends ServiceImpl<ProductDao, Product> impleme
         IPage<ProductVo> pageVo=new Page<>();
         BeanUtil.copyProperties(page,pageVo,"records");
         List<ProductVo> records= new ArrayList<>();
+
         for(Product product:page.getRecords()){
             ProductVo productVo=new ProductVo();
             BeanUtil.copyProperties(product,productVo);
             records.add(productVo);
         }
+
         pageVo.setRecords(records);
 
         return Result.success(pageVo);

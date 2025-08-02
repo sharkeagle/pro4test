@@ -32,13 +32,16 @@ public class KacptchaUtil {
         // 保存验证码到redis
         String KacptchaKey = "Kacptcha:"+ UUID.randomUUID();
         log.info("KacptchaKey:{}",KacptchaKey);
-        redisUtil.set(KacptchaKey,text,60, TimeUnit.SECONDS);
+        redisUtil.set(KacptchaKey,text,3, TimeUnit.MINUTES);
         response.setHeader("KacptchaKey",KacptchaKey);
         ServletOutputStream outputStream = response.getOutputStream();
         ImageIO.write(image,"jpg",outputStream);
         IOUtils.closeQuietly(outputStream);
     }
     public boolean checkKacptcha(String KacptchaKey,String checkCode) {
+        if(KacptchaKey == null || checkCode == null) {
+            return false;
+        }
         String text = redisUtil.get(KacptchaKey);
         if(text == null) {
             return false;

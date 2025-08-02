@@ -3,6 +3,8 @@ package com.project4test.project4test.service.serviceimpl;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.pinyin.PinyinUtil;
+import cn.hutool.json.JSONUtil;
+import com.alibaba.csp.sentinel.util.StringUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -21,6 +23,7 @@ import com.project4test.project4test.qo.UserRegisterQo;
 import com.project4test.project4test.service.UserService;
 import com.project4test.project4test.util.BcryptUtil;
 import com.project4test.project4test.util.KacptchaUtil;
+import com.project4test.project4test.util.RedisUtil;
 import com.project4test.project4test.vo.UserVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,10 +31,9 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -41,6 +43,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
     private final SysRoleDao sysRoleDao;
     private final SysUserRoleDao sysUserRoleDao;
     private final KacptchaUtil kacptchaUtil;
+    private final RedisUtil redisUtil;
 
     @Override
     public Result<String> register(UserRegisterQo userRegisterQo) {
@@ -147,9 +150,16 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
     @Override
     public List<String> getPermRoleList(String loginId) {
         // 检查登录ID是否为空，如果为空则直接返回空列表
-        if(StrUtil.isEmpty(loginId)){
+        if(StrUtil.isBlank(loginId)){
             return Collections.emptyList();
         }
+        // 从Redis缓存中获取用户角色列表
+        String roleList = redisUtil.get("user:role:" + loginId);
+
+        if(StringUtil.isNotBlank(roleList)){
+            return JSONUtil.toList(roleList, String.class);
+        }
+
 
 
         // 创建用户查询条件包装器，根据登录ID查询用户信息
@@ -157,7 +167,7 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
         queryWrapper.eq("login_id", loginId);
         User user = this.getOne(queryWrapper);
         if(user==null){
-            return Collections.emptyList();
+            return this.setNullRoleList(loginId);
         }
 
 
@@ -168,28 +178,35 @@ public class UserServiceImpl extends ServiceImpl<UserDao, User> implements UserS
         List<SysUserRole> sysUserRoles = sysUserRoleDao.selectList(sysUserRoleQueryWrapper);
         // 如果用户角色关联信息列表为空，则直接返回空列表
         if(sysUserRoles.isEmpty()){
-            return Collections.emptyList();
+            return this.setNullRoleList(loginId);
         }
+        List<Long> roleIds = sysUserRoles.stream().map(SysUserRole::getRoleId).collect(Collectors.toList());
 
 
         // 用于存储用户角色名称的列表
         List<String> roles = new ArrayList<>();
-        // 遍历用户角色关联信息列表
-        for(SysUserRole sysUserRole : sysUserRoles){
-            // 创建角色查询条件包装器，根据角色ID查询角色信息
-            QueryWrapper<SysRole> sysRoleQueryWrapper = new QueryWrapper<>();
-            sysRoleQueryWrapper.eq("id", sysUserRole.getRoleId());
-            // 根据查询条件获取角色信息
-            SysRole sysRole = sysRoleDao.selectOne(sysRoleQueryWrapper);
-            // 如果角色信息为空，则跳过本次循环
-            if(sysRole==null){
-                continue;
-            }
-            // 将角色名称添加到角色列表中
-            roles.add(sysRole.getRoleName());
+
+        QueryWrapper<SysRole> sysRoleQueryWrapper = new QueryWrapper<>();
+        sysRoleQueryWrapper.in("id", roleIds);
+        List<SysRole> sysRoles = sysRoleDao.selectList(sysRoleQueryWrapper);
+        if(sysRoles.isEmpty()){
+            return this.setNullRoleList(loginId);
         }
+        roles = sysRoles.stream().map(SysRole::getRoleName).collect(Collectors.toList());
+
+
+        // 将角色列表转换为JSON字符串并存储到Redis缓存中
+        redisUtil.set("user:role:" + loginId, JSONUtil.toJsonStr(roles),this.randomExpire(), TimeUnit.DAYS);
         return roles;
     }
 
+    private List<String> setNullRoleList(String loginId) {
+        redisUtil.set("user:role:" + loginId, JSONUtil.toJsonStr(Collections.emptyList()),this.randomExpire(), TimeUnit.MINUTES);
+        return Collections.emptyList();
+    }
+
+    private long randomExpire(){
+        return 30+new Random().nextInt(30);
+    }
 
 }
